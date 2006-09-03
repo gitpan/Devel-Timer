@@ -1,0 +1,8 @@
+--- #YAML:1.0
+name: Devel-Timer
+version: 0.02
+author:
+  - Gabor Szabo <gabor@pti.co.il>
+abstract: Track and report execution time for parts of code
+license: unknown
+generated_by: Module::Build version 0.2612, without YAML.pm

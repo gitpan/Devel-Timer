@@ -1,8 +1,12 @@
 Changes
 MANIFEST
+META.yml
+README
 COPYING
+Build.PL
 Makefile.PL
 MyTimer.pm
 Timer.pm
-Devel-Timer-0.01.readme
-test.pl
+t/test.t
+t/pod.t
+t/pod-coverage.t
