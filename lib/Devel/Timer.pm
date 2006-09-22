@@ -1,11 +1,10 @@
-
 package Devel::Timer;
-
-use vars qw($VERSION);
 use strict;
+use warnings;
+
 use Time::HiRes();
 
-$VERSION = "0.02";
+our $VERSION = "0.03";
 
 ##
 ## instantiate (and initialize) timer object
@@ -150,7 +149,7 @@ Devel::Timer - Track and report execution time for parts of code
 
   use Devel::Timer;
 
-  my $t = new Devel::Timer();
+  my $t = Devel::Timer->new();
 
   $t->mark("first db query");
 
@@ -174,7 +173,7 @@ First, the Devel::Timer module is used and instantiated.
 
   use Devel::Timer;
 
-  my $t = new Devel::Timer();
+  my $t = Devel::Timer->new();
 
 Second, markers are placed before and after pieces of code that need to be
 timed.  For this example, we are profiling the methods get_user_score() and
@@ -207,6 +206,34 @@ you can override the print() method.  The initialize() and shutdown() methods
 can also overridden if you want to open and close log files or database
 connections.
 
+=head1 Methods
+
+=head2 new
+
+Create a new instance. No parameters are processed.
+
+=head2 initialize
+
+Empty method. Can be implemented in the subclass.
+
+=head2 mark(NAME)
+
+Set a timestamp with a NAME.
+
+=head2 print
+
+Prints to the standar error. Can be overridden in the subclass.
+
+=head2 report
+
+Generates the report. Prints using the B<print> method.
+
+=head2 shutdown
+
+Empty method. Can be implemented in subclass.
+
+=head1 Subclassing
+
 e.g.
 
 package MyTimer;
@@ -238,7 +265,7 @@ You would then use the new module MyTimer exactly as you would use
 Devel::Timer.
 
   use MyTimer;
-  my $t = new MyTimer();
+  my $t = MyTimer->new();
   $t->mark("about to do x");
   $t->mark("about to do y");
   $t->mark("done y");
@@ -247,6 +274,13 @@ Devel::Timer.
 =head1 SEE ALSO
 
 Time::HiRes
+
+=head1 Copyright
+
+Jason Moore
+
+This is free software.
+It is licensed under the same terms as Perl itself.
 
 =head1 AUTHOR
 

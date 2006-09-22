@@ -1,8 +1,21 @@
---- #YAML:1.0
+---
 name: Devel-Timer
-version: 0.02
+version: 0.03
 author:
-  - Gabor Szabo <gabor@pti.co.il>
+  - 'Gabor Szabo <gabor@pti.co.il>'
 abstract: Track and report execution time for parts of code
-license: unknown
-generated_by: Module::Build version 0.2612, without YAML.pm
+license: perl
+resources:
+  license: http://dev.perl.org/licenses/
+requires:
+  Time::HiRes: 0
+build_requires:
+  Test::More: 0.47
+provides:
+  Devel::Timer:
+    file: lib/Devel/Timer.pm
+    version: 0.03
+generated_by: Module::Build version 0.2805
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.2.html
+  version: 1.2
