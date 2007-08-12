@@ -2,14 +2,14 @@
 use ExtUtils::MakeMaker;
 WriteMakefile
 (
-          'PL_FILES' => {},
-          'INSTALLDIRS' => 'site',
           'NAME' => 'Devel::Timer',
-          'EXE_FILES' => [],
           'VERSION_FROM' => 'lib/Devel/Timer.pm',
           'PREREQ_PM' => {
                            'Test::More' => '0.47',
                            'Time::HiRes' => '0'
-                         }
+                         },
+          'INSTALLDIRS' => 'site',
+          'EXE_FILES' => [],
+          'PL_FILES' => {}
         )
 ;

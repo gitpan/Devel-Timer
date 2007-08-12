@@ -4,15 +4,14 @@ use warnings;
 
 use Time::HiRes();
 
-our $VERSION = "0.03";
+our $VERSION = "0.04";
 
 ##
 ## instantiate (and initialize) timer object
 ##
 
-sub new
-{
-    my $class = shift;
+sub new {
+    my ($class) = @_;
     my $self = {    
                 times => [],
                 count => 0,
@@ -32,8 +31,7 @@ sub new
 ## mark time (w/ optional label)
 ##
 
-sub mark
-{
+sub mark {
     my($self, $label) = @_; 
 
     $label = '' if (!defined($label));
@@ -41,12 +39,10 @@ sub mark
     my $t = [ Time::HiRes::gettimeofday() ];
 
     my $last_time;
-    if ($self->{count} == 0)        ## first time has no last time
-    {
+    if ($self->{count} == 0) {       ## first time has no last time
         $last_time = $t;
     }
-    else
-    {
+    else {
         $last_time = $self->{times}->[($self->{count}-1)];
     }
 
@@ -56,9 +52,10 @@ sub mark
 
     ## save time interval 
 
-    my $interval = {    value => Time::HiRes::tv_interval($last_time, $t),
-                        index => $self->{count},
-                        };
+    my $interval = {
+                    value => Time::HiRes::tv_interval($last_time, $t),
+                    index => $self->{count},
+                   };
     push(@{$self->{intervals}}, $interval);
 
     ## save label in separate hash for fast lookup
@@ -73,9 +70,8 @@ sub mark
 ## output report to error log
 ##
 
-sub report
-{
-    my $self = shift;
+sub report {
+    my ($self, %args) = @_;
 
     ## calculate total time (start time vs last time)
 
@@ -83,6 +79,26 @@ sub report
 
     $self->print("\n");
     $self->print(ref($self) . " Report -- Total time: " . sprintf("%.4f", $total_time) . " secs");
+    if ($args{collapse}) {
+       $self->_calculate_collapsed;
+
+       $self->print("Count     Time    Percent");
+       $self->print("----------------------------------------------");
+
+       my $c = $self->{collapsed};
+       my $sort_by = $args{sort_by} || "time";
+       my @labels = sort { $c->{$b}->{$sort_by} <=> $c->{$a}->{$sort_by} } keys %$c;
+       foreach my $label (@labels) {
+           my $count = $c->{$label}->{count};
+           my $time = $c->{$label}->{time};
+           my $msg = sprintf("%8s  %.4f  %5.2f%%  %s",
+               ($count, $time, (($time/$total_time)*100), $label));
+           $self->print($msg);
+       }
+       return 1;
+    }
+
+
     $self->print("Interval  Time    Percent");
     $self->print("----------------------------------------------");
 
@@ -94,8 +110,7 @@ sub report
     ## report of each time space between marks
     ##
 
-    my $i;
-    for $i (@{$self->{intervals}})
+    for my $i (@{$self->{intervals}})
     {
         ## skip first time (to make an interval, 
         ## compare the current time with the previous one)
@@ -110,6 +125,32 @@ sub report
     }
 }
 
+sub _calculate_collapsed {
+    my ($self) = @_;
+
+    my %collapsed;
+    foreach my $i (0 .. $self->{count} - 2) {
+        my $label = $self->{label}->{$i} . ' -> ' . $self->{label}->{$i + 1};
+        my $time = Time::HiRes::tv_interval($self->{times}->[$i], $self->{times}->[$i + 1]);
+        $collapsed{$label}{time} += $time;
+        $collapsed{$label}{count}++;
+    }
+    $self->{collapsed} = \%collapsed;
+}
+
+sub get_stats {
+    my ($self, $a, $b) = @_;
+    $self->_calculate_collapsed;
+    my $collapsed = $self->{collapsed};
+    my $total_time = Time::HiRes::tv_interval($self->{times}->[0], $self->{times}->[$self->{count}-1]);
+    my $label = "$a -> $b";
+    my $time =  $collapsed->{$label}->{time};
+    my $count = $collapsed->{$label}->{count};
+    return ($time, $time / $total_time * 100, $count);
+}
+
+
+
 ## output methods
 ## note: if you want to send output to somewhere other than stderr,
 ##       you can override the print() method below.  The initialize()
@@ -117,22 +158,18 @@ sub report
 ##       or connect to a database before printing the report.
 ##       See pod for an example.
 
-sub initialize
-{
+sub initialize {
 }
 
-sub print
-{
+sub print {
     my($self, $msg) = @_;
     print STDERR $msg . "\n";
 }
 
-sub shutdown
-{
+sub shutdown {
 }
 
-sub DESTROY
-{
+sub DESTROY {
     my $self = shift;
     $self->shutdown();
 }
@@ -206,7 +243,7 @@ you can override the print() method.  The initialize() and shutdown() methods
 can also overridden if you want to open and close log files or database
 connections.
 
-=head1 Methods
+=head1 METHODS
 
 =head2 new
 
@@ -222,17 +259,81 @@ Set a timestamp with a NAME.
 
 =head2 print
 
-Prints to the standar error. Can be overridden in the subclass.
+Prints to STDERR. Can be overridden in the subclass.
 
 =head2 report
 
-Generates the report. Prints using the B<print> method.
+Prints the report to STDOUT.  By default report() looks like this:
+
+  $t->report;
+
+  Devel::Timer Report -- Total time: 7.0028 secs
+  Interval  Time    Percent
+  ----------------------------------------------
+  05 -> 06  3.0006  42.85%  something begin -> something end
+  03 -> 04  2.0007  28.57%  something begin -> something end
+  06 -> 07  1.0009  14.29%  something end -> END
+  01 -> 02  1.0004  14.29%  something begin -> something end
+  00 -> 01  0.0000   0.00%  INIT -> something begin
+  04 -> 05  0.0000   0.00%  something end -> something begin
+  02 -> 03  0.0000   0.00%  something end -> something begin
+
+Which is great for small or non-iterative programs, but if there's
+hundreds of loops of "something begin -> something end" the report gets
+very painful very quickly. :)
+
+In that scenario you might find B<collapse> useful:
+
+  $t->report(collapse => 1);
+
+  Devel::Timer Report -- Total time: 7.0028 secs
+  Count     Time    Percent
+  ----------------------------------------------
+         3  6.0018  85.71%  something begin -> something end
+         1  1.0009  14.29%  something end -> END
+         2  0.0001   0.00%  something end -> something begin
+         1  0.0000   0.00%  INIT -> something begin
+
+The stats for all combinations of labels are added together. 
+
+We also accept a B<sort_by> parameter. By default the report is sorted by total
+time spent descending (like the default report()), but you can sort by count
+descending instead if you want:
+
+  $t->report(collapse => 1, sort_by => 'count');
+
+  Devel::Timer Report -- Total time: 7.0028 secs
+  Count     Time    Percent
+  ----------------------------------------------
+         3  6.0018  85.71%  something begin -> something end
+         2  0.0001   0.00%  something end -> something begin
+         1  0.0000   0.00%  INIT -> something begin
+         1  1.0009  14.29%  something end -> END
+
+=head2 get_stats
+
+Returns the accumulated statistics for a specific a combination of mark()'s that
+have occurred while your program ran. 
+These values are the exact same statistics that report() prints. get_stats()
+simply returns them to you so you can do something creative with them.
+
+For example, to get the cumulative stats for every time your program has 
+specifically moved from mark("X") to mark("Y"), you can run this:
+
+  my ($time, $percent, $count) = $t->get_stats("X", "Y");
+
+$time is the total number of seconds elapsed between "X" and "Y".
+
+$percent is the percentage of total program run time that you have spent between
+"X" and "Y".
+
+$count is the number of times your program has moved from "X" to "Y".
 
 =head2 shutdown
 
 Empty method. Can be implemented in subclass.
 
-=head1 Subclassing
+=head1 SUBCLASSING
 
 e.g.
 
@@ -271,11 +372,25 @@ Devel::Timer.
   $t->mark("done y");
   $t->report();
 
+=head1 TO DO 
+
+Devel::Timer does not currently do any reporting or statistics of any kind 
+based on nested trees of mark() calls. So if your program runs these mark() calls:
+
+  A 
+    B, C
+    B, C
+  D
+  E
+
+Devel::Timer never tells you anything about how much time you spent moving from
+A to D. Depth aware reporting might be an interesting project to tackle.
+
 =head1 SEE ALSO
 
 Time::HiRes
 
-=head1 Copyright
+=head1 COPYRIGHT
 
 Jason Moore
 
@@ -284,9 +399,9 @@ It is licensed under the same terms as Perl itself.
 
 =head1 AUTHOR
 
-  Jason Moore - jmoore@sober.com
-
-  Maintainer: Gabor Szabo - gabor@pti.co.il
+  Author:      Jason Moore - jmoore@sober.com (no longer valid)
+  Maintainer:  Gabor Szabo - gabor@pti.co.il
+  Contributor: Jay Hannah  - jay@jays.net
 
 =cut
 

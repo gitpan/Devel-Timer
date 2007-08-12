@@ -1,5 +1,9 @@
 Revision history for Perl extension Devel::Timer.
 
+0.04 2007 August 12
+    - Apply changes of Jay Hannah 
+      - added collapse and sort_by arguments to report() method
+      - added get_stats() method
 
 0.03 2006 September 22
     - use warnings

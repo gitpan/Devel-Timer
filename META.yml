@@ -1,6 +1,6 @@
 ---
 name: Devel-Timer
-version: 0.03
+version: 0.04
 author:
   - 'Gabor Szabo <gabor@pti.co.il>'
 abstract: Track and report execution time for parts of code
@@ -14,8 +14,8 @@ build_requires:
 provides:
   Devel::Timer:
     file: lib/Devel/Timer.pm
-    version: 0.03
-generated_by: Module::Build version 0.2805
+    version: 0.04
+generated_by: Module::Build version 0.2808
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.2.html
   version: 1.2
