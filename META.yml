@@ -1,21 +1,30 @@
 ---
-name: Devel-Timer
-version: 0.04
+abstract: 'Track and report execution time for parts of code'
 author:
-  - 'Gabor Szabo <gabor@pti.co.il>'
-abstract: Track and report execution time for parts of code
+  - 'Author:      Jason Moore - jmoore@sober.com (no longer valid)'
+  - 'Jason Moore'
+build_requires:
+  ExtUtils::MakeMaker: 6.59
+  Test::More: 0.42
+configure_requires:
+  ExtUtils::MakeMaker: 6.59
+distribution_type: module
+dynamic_config: 1
+generated_by: 'Module::Install version 1.06'
 license: perl
-resources:
-  license: http://dev.perl.org/licenses/
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: Devel-Timer
+no_index:
+  directory:
+    - inc
+    - t
+    - xt
 requires:
   Time::HiRes: 0
-build_requires:
-  Test::More: 0.47
-provides:
-  Devel::Timer:
-    file: lib/Devel/Timer.pm
-    version: 0.04
-generated_by: Module::Build version 0.2808
-meta-spec:
-  url: http://module-build.sourceforge.net/META-spec-v1.2.html
-  version: 1.2
+  perl: 5.006
+resources:
+  license: http://dev.perl.org/licenses/
+  repository: https://github.com/szabgab/Devel-Timer
+version: 0.05
