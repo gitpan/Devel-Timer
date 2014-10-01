@@ -4,19 +4,19 @@ use strict;
 use warnings;
 
 use Test::More;
+use Capture::Tiny qw(capture);
 my $tests;
-plan tests => $tests;
+plan tests => 5;
 
 use_ok( 'Devel::Timer');
-BEGIN { $tests += 1; }
 
-{
-    close STDERR;
-    my $stderr;
-    open STDERR, '>', \$stderr or die;
+subtest simple => sub {
+    plan tests => 10;
 
-    my $t = _process();
-    $t->report();
+    my ($stdout, $stderr, $exit) = capture {
+        my $t = _process();
+        $t->report();
+    };
 
     like(  $stderr, qr/Total time/,                "Total time");
     like(  $stderr, qr/Interval  Time    Percent/, "header");
@@ -29,16 +29,16 @@ BEGIN { $tests += 1; }
     like(  $stderr, qr/06 -> 07 .* B -> C/,        "step 6");
     unlike($stderr, qr/07 -> 08/,                  "no step 7");
     #diag $stderr;
-    BEGIN { $tests += 10; }
-}
+};
 
-{
-    close STDERR;
-    my $stderr;
-    open STDERR, '>', \$stderr or die;
+subtest another => sub {
+    plan tests => 7;
 
-    my $t = _process();
-    $t->report(collapse => 1);
+    my ($stdout, $stderr, $exit) = capture {
+        my $t = _process();
+        $t->report(collapse => 1);
+    };
+
     like(  $stderr, qr/Total time/,                "Total time");
     like(  $stderr, qr/Count     Time    Percent/, "header");
     like(  $stderr, qr/\n + 3 .* A -> B/,          "A -> B");
@@ -48,16 +48,16 @@ BEGIN { $tests += 1; }
     like(  $stderr, qr/A -> B.* B -> C.* B -> A.* INIT -> A/s, 
                                                    "order by time descending");
     #diag $stderr;
-    BEGIN { $tests += 7; }
-}
+};
 
-{
-    close STDERR;
-    my $stderr;
-    open STDERR, '>', \$stderr or die;
+subtest sort_by_count => sub {
+    plan tests => 7;
 
-    my $t = _process();
-    $t->report(collapse => 1, sort_by => "count");
+    my ($stdout, $stderr, $exit) = capture {
+        my $t = _process();
+        $t->report(collapse => 1, sort_by => 'count');
+    };
+
     like(  $stderr, qr/Total time/,                "Total time");
     like(  $stderr, qr/Count     Time    Percent/, "header");
     like(  $stderr, qr/\n + 3 .* A -> B/,          "A -> B");
@@ -68,20 +68,22 @@ BEGIN { $tests += 1; }
     # that are correct (because B -> C and INIT -> A both only happened one time
     # so we don't care which one shows up first on the report.
     my $test = 
-       ($stderr =~ /A -> B.* B -> A.* B -> C.* INIT -> A/s)  or
-       ($stderr =~ /A -> B.* B -> A.* INIT -> A.* B -> C/s);
-    ok($test, "sort by count");
+       (($stderr =~ /A -> B.* B -> A.* B -> C.* INIT -> A/s)  or
+       ($stderr =~ /A -> B.* B -> A.* INIT -> A.* B -> C/s));
+    ok($test, "sort by count") or diag $stderr;
     #diag $stderr;
-    BEGIN { $tests += 7; }
-}
+};
 
-{
-    close STDERR;
-    my $stderr;
-    open STDERR, '>', \$stderr or die;
+subtest process => sub {
+    plan tests => 24;
 
-    my $t = _process();
-    $t->report(collapse => 1, sort_by => "count");
+
+    my $t;
+    my ($stdout, $stderr, $exit) = capture {
+        $t = _process();
+        #$t->report(collapse => 1, sort_by => 'count');
+    };
+
     my ($time, $percent, $count);
     ok(($time, $percent, $count) = $t->get_stats("A", "B"),   "get_stats('A', 'B')");
     cmp_ok($time,     '>=', 0.6,   '$time');
@@ -108,8 +110,7 @@ BEGIN { $tests += 1; }
     cmp_ok($percent,  '<=', 5,     '$percent');
     cmp_ok($count,    '==', 1,     '$count');
     #diag $stderr;
-    BEGIN { $tests += 24; }
-}
+};
 
 
 
